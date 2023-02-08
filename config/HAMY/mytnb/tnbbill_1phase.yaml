@@ -1,0 +1,210 @@
+### This template is meant for Single Phase user only. ###
+## The meter itself ##
+utility_meter:
+  tnb_monthly:
+    source: sensor.tnb_energy_source
+    cycle: monthly
+    name: "TNB Monthly Energy"
+    tariffs:
+      - below200kwh
+      - above200kwh
+      - above300kwh
+      - above600kwh
+      - above900kwh
+    offset:
+      days: 5 ### BILLING DATE <-- Change this to your billing cycle
+  tnb_currentmonth:
+    source: sensor.tnb_energy_source
+    cycle: monthly
+    name: "TNB Current Month Energy"
+    offset:
+      days: 5 ### BILLING DATE <-- Change this to your billing cycle
+      
+############################################### 
+#### NO EDITING REQUIRED BEYOND THIS POINT ####
+###############################################
+  tnb_currentday:
+    source: sensor.tnb_energy_source
+    cycle: daily
+    name: "TNB Current Day Energy"
+
+## Input Text ##
+input_text:
+  tnb_energy_source:
+    name: "TNB Energy Source"
+    initial: "sensor.main_switch_channel_1_energy"
+    icon: mdi:gauge
+  tnb_voltage_source:
+    name: "TNB Voltage Source"
+    initial: "sensor.main_switch_channel_1_voltage"
+    icon: mdi:sine-wave
+  tnb_power_source:
+    name: "TNB Power Source"
+    initial: "sensor.main_switch_channel_1_power"
+    icon: mdi:flash
+  tnb_current_source:
+    name: "TNB Current Source"
+    initial: "sensor.main_switch_channel_1_current"
+    icon: mdi:flash
+  tnb_offset:
+    name: "TNB Billing Cycle"
+    initial: "5"
+    icon: mdi:calendar-refresh
+
+## Sensors ##
+template:
+  - sensor:
+    - name: "TNB Tariff"
+      unique_id: tnb_tariff
+      state: >-
+        {%if is_state('select.tnb_monthly', 'below200kwh') %}0.218
+        {%elif is_state('select.tnb_monthly', 'above200kwh') %}0.334
+        {%elif is_state('select.tnb_monthly', 'above300kwh') %}0.516
+        {%elif is_state('select.tnb_monthly', 'above600kwh') %}0.546
+        {%elif is_state('select.tnb_monthly', 'above900kwh') %}0.571
+        {%endif%}
+      attributes:
+        blocktariff: >-
+          {%if is_state('select.tnb_monthly', 'below200kwh') %}Tier 1
+          {%elif is_state('select.tnb_monthly', 'above200kwh') %}Tier 2
+          {%elif is_state('select.tnb_monthly', 'above300kwh') %}Tier 3
+          {%elif is_state('select.tnb_monthly', 'above600kwh') %}Tier 4
+          {%elif is_state('select.tnb_monthly', 'above900kwh') %}Tier 5
+          {%endif%}
+      device_class: monetary
+      unit_of_measurement: 'MYR/kWh'
+    - name: "TNB Day Energy Cost"
+      unique_id: tnb_day_energy_cost
+      state: >-
+        {% set Y = states('sensor.tnb_current_day_energy') | float %}
+        {{ (Y * states('sensor.tnb_tariff') | float) | round(2) }}
+      device_class: monetary
+      unit_of_measurement: 'MYR'
+    - name: "TNB Month Energy Cost"
+      unique_id: tnb_month_energy_cost
+      state: >-
+        {% set below200 = (states('sensor.tnb_monthly_below200kwh') | float * 0.218 | float) | round(2) %}
+        {% set above200 = (states('sensor.tnb_monthly_above200kwh') | float * 0.334 | float) | round(2) %}
+        {% set above300 = (states('sensor.tnb_monthly_above300kwh') | float * 0.516 | float) | round(2) %}
+        {% set above600 = (states('sensor.tnb_monthly_above600kwh') | float * 0.546 | float) | round(2) %}
+        {% set above900 = (states('sensor.tnb_monthly_above900kwh') | float * 0.571 | float) | round(2) %}
+        {{ below200 + above200 + above300 + above600 + above900 | round(2) }}
+      device_class: monetary
+      unit_of_measurement: 'MYR'
+    - name: "TNB Energy Source"
+      unique_id: tnb_energy_source
+      state: >-
+        {{ states(states('input_text.tnb_energy_source')) }}
+      state_class: total_increasing
+      unit_of_measurement: kWh
+      device_class: energy
+    - name: "TNB Voltage Source"
+      unique_id: tnb_voltage_source
+      state: >-
+        {{ states(states('input_text.tnb_voltage_source')) }}
+      state_class: measurement
+      unit_of_measurement: V
+      device_class: voltage
+    - name: "TNB Power Source"
+      unique_id: tnb_power_source
+      state: >-
+        {{ states(states('input_text.tnb_power_source')) }}
+      state_class: measurement
+      unit_of_measurement: W
+      device_class: power
+    - name: "TNB Current Source"
+      unique_id: tnb_current_source
+      state: >-
+        {{ states(states('input_text.tnb_current_source')) }}
+      state_class: measurement
+      unit_of_measurement: A
+      device_class: current
+
+automation:
+  - alias: "⚡ TNB - Statistics"
+    id: tnb_statistic
+    description: "TNB Statistics"
+    mode: single
+    trigger:
+      - platform: time
+        at: "23:59:59"
+    condition: []
+    action:
+      - service: persistent_notification.create
+        data:
+          message: >-
+            <ha-alert alert-type="info">**Date:** {{ now().strftime('%A, %e %B %Y') }}</ha-alert>
+            
+            **<u>Today Consumption</u>** {{ '\n' }}
+            **Power:** {{ states('sensor.tnb_current_day_energy') }} kWh{{ '\n' }}
+            **Today Cost:** RM {{ states('sensor.tnb_day_energy_cost') | round (2) }}{{ '\n' }}
+            **Billing Tariff:** {{ state_attr('sensor.tnb_tariff', 'blocktariff') }}{{ '\n' }}
+            
+            **<u>Monthly Consumption</u>** {{ '\n' }}
+            **Total Power:** {{ states('sensor.tnb_current_month_energy') }} kWh {{ '\n' }}
+            **Total Cost:** RM {{ states('sensor.tnb_month_energy_cost') | round (2) }}{{ '\n' }}
+          notification_id: tnb_bill
+          title: ⚡ TNB Consumption Update
+  - alias: "⚡ TNB - Select Tariff"
+    description: "Selection of TNB tariff"
+    mode: single
+    trigger:
+      - platform: state
+        entity_id:
+          - sensor.tnb_current_month_energy
+    condition: []
+    action:
+      - choose:
+          - conditions:
+              - condition: numeric_state
+                entity_id: sensor.tnb_current_month_energy
+                below: 200
+            sequence:
+              - service: select.select_option
+                data:
+                  option: below200kwh
+                target:
+                  entity_id: select.tnb_monthly
+          - conditions:
+              - condition: numeric_state
+                entity_id: sensor.tnb_current_month_energy
+                above: 201
+                below: 300
+            sequence:
+              - service: select.select_option
+                data:
+                  option: above200kwh
+                target:
+                  entity_id: select.tnb_monthly
+          - conditions:
+              - condition: numeric_state
+                entity_id: sensor.tnb_current_month_energy
+                above: 301
+                below: 600
+            sequence:
+              - service: select.select_option
+                data:
+                  option: above300kwh
+                target:
+                  entity_id: select.tnb_monthly
+          - conditions:
+              - condition: numeric_state
+                entity_id: sensor.tnb_current_month_energy
+                above: 601
+                below: 900
+            sequence:
+              - service: select.select_option
+                data:
+                  option: above600kwh
+                target:
+                  entity_id: select.tnb_monthly
+          - conditions:
+              - condition: numeric_state
+                entity_id: sensor.tnb_current_month_energy
+                above: 901
+            sequence:
+              - service: select.select_option
+                data:
+                  option: above900kwh
+                target:
+                  entity_id: select.tnb_monthly
