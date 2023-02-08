@@ -1,0 +1,88 @@
+### [ Main Panel ] ###
+
+type: vertical-stack
+cards:
+  - type: gauge
+    entity: sensor.tnb_current_source
+    name: Current Load
+    max: 59
+    needle: true
+    severity:
+      green: 0
+      yellow: 40
+      red: 55
+  - type: horizontal-stack
+    cards:
+      - hours_to_show: 24
+        graph: none
+        type: sensor
+        entity: sensor.tnb_voltage_source
+        detail: 1
+        name: Voltage
+      - hours_to_show: 24
+        graph: none
+        type: sensor
+        entity: sensor.tnb_power_source
+        detail: 1
+        name: Power
+  - hours_to_show: 24
+    graph: line
+    type: sensor
+    entity: sensor.tnb_current_month_energy
+    detail: 1
+  - type: entities
+    entities:
+      - entity: sensor.tnb_current_day_energy
+        name: Daily kWh
+      - entity: sensor.tnb_day_energy_cost
+        name: Daily Cost
+      - type: divider
+      - entity: sensor.tnb_current_month_energy
+        name: Monthly kWh
+      - entity: sensor.tnb_month_energy_cost
+        name: Total Cost
+      - type: divider
+      - type: attribute
+        attribute: blocktariff
+        entity: sensor.tnb_tariff
+view_layout:
+  position: sidebar
+
+
+### [ Energy Graph ] ###
+
+type: history-graph
+entities:
+  - entity: sensor.tnb_voltage_source
+  - entity: sensor.tnb_power_source
+  - entity: sensor.tnb_current_source
+
+### [ Configuration ] ###
+
+type: vertical-stack
+cards:
+  - type: markdown
+    content: >-
+      This TNB bill calculation is meant to calculate **energy consumption
+      only**, and does not include other charges such as 1% late payment, 1.6%
+      Kumpulan Wang Tenaga Boleh Baharu (RE Fund), Power Factor surcharge,
+      Connected Load Charge (CLC) penalty etc.
+
+
+      More info from TNB
+      [here](https://www.mytnb.com.my/residential/understand-your-bill/bill-calculator)
+
+
+      To begin, enter the sensor entity ID into the configuration panel. For
+      billing calculation, it only required the energy sensor. The rest is just
+      to facilitate the information in the dashboard
+    title: 🏡 Energy Monitoring
+  - type: entities
+    entities:
+      - entity: input_text.tnb_energy_source
+      - entity: input_text.tnb_voltage_source
+      - entity: input_text.tnb_power_source
+      - entity: input_text.tnb_current_source
+    title: ⚡ Energy Sensor Configuration
+view_layout:
+  position: sidebar
