@@ -19,6 +19,9 @@ homeassistant:
 4. Create new dashboard (lovelace) and copy the templates [lovelace-ui-1phase.yaml](lovelace-ui-1phase.yaml)
 5. Define energy source
 
+![image](https://user-images.githubusercontent.com/1905339/217669869-c0092f49-cdd1-46ff-8834-6a3bd126c1fb.png)
+
+
 ## Visual
 ### Main Dashboard
 ![image](https://user-images.githubusercontent.com/1905339/217555443-7a651f27-6bb5-45e8-b282-c9b732661038.png)
