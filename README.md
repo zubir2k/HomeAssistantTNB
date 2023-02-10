@@ -6,6 +6,9 @@ This template only supports for single phase user. Will add for 3 phase soon ins
 1. Energy Sensor Integration (via CT Clamp, Smart RCCB and others) -> refer [here](https://www.home-assistant.io/docs/energy/electricity-grid/) \
 (Highly recommended - Shelly EM or 3EM with CT Clamp)
 
+- Shelly EM - [link](https://s.lazada.com.my/s.U1C72)
+- Shelly 3EM - [link](https://s.lazada.com.my/s.U1wAX)
+
 ## Installation
 1. Copy all files into your Home Assistant directory and paste all files into `\config`.
 2. Enable package in [configuration.yaml](configuration.yaml) by adding the following line into the config file
