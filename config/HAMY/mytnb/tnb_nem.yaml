@@ -1,0 +1,96 @@
+## This template serves as NEM calculation
+## It requires a sensor that reads export (in shelly case, it is called energy returned)
+## Once the sensor has been defined, restart HA and proceed to add TNB NEM Rate in your energy dashboard
+
+## Utility Meter ##
+utility_meter:
+  tnb_nem_monthly_energy:
+    source: sensor.tnb_nem_source
+    cycle: monthly
+    name: "TNB NEM Monthly Energy"
+    tariffs:
+      - below200kwh
+      - above200kwh
+      - above300kwh
+      - above600kwh
+      - above900kwh
+    offset:
+      days: 1 ### BILLING DATE <-- Change this to your billing cycle      
+  tnb_nem_currentmonth:
+    source: sensor.tnb_nem_source
+    cycle: monthly
+    name: "TNB NEM Current Month"
+    offset:
+      days: 1
+  tnb_nem_currentday:
+    source: sensor.tnb_nem_source
+    cycle: daily
+    name: "TNB NEM Current Day"
+    
+## Input Text ##
+input_text:
+  tnb_nem_source:
+    name: "TNB NEM Source"
+    initial: "sensor.main_switch_channel_1_energy_returned"
+    icon: mdi:gauge
+
+## Template ##
+template:
+  - sensor:
+    ## NEW NEM SENSOR 09122024 ##
+    - name: "TNB NEM Earnings Daily"
+      unique_id: tnb_nem_earnings_daily
+      state: >-
+        {% set month_total = states('sensor.tnb_nem_current_month') | float(0) %}
+        {% set today_export = states('sensor.tnb_nem_current_day') | float(0) %}
+        {% set cumulative = max(month_total - today_export, 0) %}
+        {% set above900 = max(cumulative + today_export - 900, 0) %}
+        {% set above600 = max(cumulative + today_export - above900 - 600, 0) %}
+        {% set above300 = max(cumulative + today_export - above900 - above600 - 300, 0) %}
+        {% set above200 = max(cumulative + today_export - above900 - above600 - above300 - 200, 0) %}
+        {% set below200 = max(today_export - above900 - above600 - above300 - above200, 0) %}
+        {% if below200 < 0 or today_export < 0 %}
+          0
+        {% else %}
+          {{ (above900 * 0.571 + above600 * 0.546 + above300 * 0.516 + above200 * 0.334 + below200 * 0.218) | round(2) }}
+        {% endif %}
+      device_class: monetary
+      unit_of_measurement: 'MYR'
+
+    - name: "TNB NEM Earnings Monthly"
+      unique_id: tnb_nem_earnings_monthly
+      state: >-
+        {% set export_energy = states('sensor.tnb_nem_current_month') | float %}
+        {% set above900 = [export_energy - 900, 0] | max %}
+        {% set above600 = [export_energy - above900 - 600, 0] | max %}
+        {% set above300 = [export_energy - above900 - above600 - 300, 0] | max %}
+        {% set above200 = [export_energy - above900 - above600 - above300 - 200, 0] | max %}
+        {% set below200 = export_energy - above900 - above600 - above300 - above200 %}
+        {{ (above900 * 0.571 + above600 * 0.546 + above300 * 0.516 + above200 * 0.334 + below200 * 0.218) | round(2) }}
+      device_class: monetary
+      unit_of_measurement: 'MYR'
+
+    - name: "TNB NEM Rate"
+      unique_id: tnb_nem_rate
+      unit_of_measurement: "MYR/kWh"
+      state: >-
+        {% set total_export = states('sensor.tnb_nem_current_month') | float(0) %}
+        {% set total_earnings = 
+          (max(total_export - 900, 0) * 0.571) +
+          (max(total_export - max(total_export - 900, 0) - 600, 0) * 0.546) +
+          (max(total_export - max(total_export - 900, 0) - max(total_export - max(total_export - 900, 0) - 600, 0) - 300, 0) * 0.516) +
+          (max(total_export - max(total_export - 900, 0) - max(total_export - max(total_export - 900, 0) - 600, 0) - max(total_export - max(total_export - 900, 0) - max(total_export - max(total_export - 900, 0) - 600, 0) - 300, 0) - 200, 0) * 0.334) +
+          (total_export - max(total_export - 900, 0) - max(total_export - max(total_export - 900, 0) - 600, 0) - max(total_export - max(total_export - 900, 0) - max(total_export - max(total_export - 900, 0) - 600, 0) - 300, 0) - max(total_export - max(total_export - 900, 0) - max(total_export - max(total_export - 900, 0) - max(total_export - max(total_export - 900, 0) - 600, 0) - 300, 0) - 200, 0)) * 0.218 %}
+        {% if total_export > 0 %}
+          {{ (total_earnings / total_export) | round(3) }}
+        {% else %}
+          0
+        {% endif %}
+
+    - name: "TNB NEM Source"
+      unique_id: tnb_nem_source
+      state: >-
+        {{ states(states('input_text.tnb_nem_source')) }}
+      state_class: total_increasing
+      unit_of_measurement: kWh
+      device_class: energy    
