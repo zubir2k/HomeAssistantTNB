@@ -1,3 +1,9 @@
+> [!Warning]
+> This template is no longer maintained.
+> Please use the integration instead. 
+>
+> [![Repo](https://img.shields.io/badge/salihinsaealal-homeassistant/tnbcalculator-brightgreen?logo=github)](https://github.com/salihinsaealal/home-assistant-tnb-calculator)
+
 # HomeAssistantTNB  ![visitors](https://visitor-badge.glitch.me/badge?page_id=zubir2k.homeassistanttnb.visitor-badge)
 Home Assistant template for Energy consumption based on TNB (Tenaga Nasional Berhad) Malaysia \
 This template only supports for single phase user. Will add for 3 phase soon inshaAllah
